@@ -1,0 +1,72 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aquarium Dosing",
+        "description": "Create a Toggle helper first (Settings > Devices & services > Helpers > Create helper > Toggle) and select it as the master toggle. ON allows scheduled dosing, OFF pauses it, for example during a water change. Add the integration again for a second aquarium, each with its own toggle.",
+        "data": {
+          "name": "Aquarium name",
+          "master_entity": "Master toggle (input_boolean)",
+          "one_at_a_time": "Run one pump at a time",
+          "late_tolerance_minutes": "Late dose tolerance (minutes)"
+        },
+        "data_description": {
+          "one_at_a_time": "Doses wait for each other. Turn off only if each pump has its own power supply.",
+          "late_tolerance_minutes": "A scheduled dose more than this late (for example after a restart) is skipped, never caught up."
+        }
+      },
+      "pump": {
+        "title": "First pump",
+        "description": "Pick the switch that powers the pump. More pumps, schedules and the operating window are set in the Aquarium Dosing card. New pumps start with the schedule disabled.",
+        "data": {
+          "name": "Pump name",
+          "switch": "Pump switch"
+        }
+      }
+    },
+    "error": {
+      "invalid_name": "Use lowercase letters, digits and underscores only (max 32 characters)."
+    },
+    "abort": {
+      "already_configured": "That master toggle is already used by another aquarium."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aquarium Dosing options",
+        "data": {
+          "master_entity": "Master toggle (input_boolean)",
+          "one_at_a_time": "Run one pump at a time",
+          "late_tolerance_minutes": "Late dose tolerance (minutes)"
+        }
+      }
+    }
+  },
+  "services": {
+    "dose": {
+      "name": "Dose",
+      "description": "Run one dose on a pump now. Safety checks apply.",
+      "fields": {
+        "volume": {
+          "name": "Volume",
+          "description": "mL to dose. Leave empty to use the pump's dose volume."
+        },
+        "ignore_window": {
+          "name": "Ignore operating window",
+          "description": "Dose even if the pump's operating window is closed. Other safety checks still apply."
+        }
+      }
+    },
+    "calibrate": {
+      "name": "Calibrate",
+      "description": "Finish a calibration with the amount measured from the 10 mL test dose.",
+      "fields": {
+        "measured_ml": {
+          "name": "Measured output",
+          "description": "mL actually delivered by the test dose."
+        }
+      }
+    }
+  }
+}
