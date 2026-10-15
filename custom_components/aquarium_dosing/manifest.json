@@ -1,0 +1,14 @@
+{
+  "domain": "aquarium_dosing",
+  "name": "Aquarium Dosing",
+  "after_dependencies": [],
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "persistent_notification", "websocket_api"],
+  "documentation": "https://github.com/your-name/aquarium_dosing",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/your-name/aquarium_dosing/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

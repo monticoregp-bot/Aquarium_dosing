@@ -1,0 +1,44 @@
+dose:
+  name: Dose
+  description: >-
+    Run one dose on a pump now. Scheduled-dose safety checks apply: the operating
+    window, run-time cap, cooldown and daily cap.
+  target:
+    entity:
+      integration: aquarium_dosing
+  fields:
+    volume:
+      name: Volume
+      description: mL to dose. Leave empty to use the pump's dose volume.
+      selector:
+        number:
+          min: 0.01
+          max: 1000
+          step: 0.01
+          unit_of_measurement: mL
+    ignore_window:
+      name: Ignore operating window
+      description: Dose even if the pump's operating window is closed. Other safety checks still apply.
+      default: false
+      selector:
+        boolean:
+
+calibrate:
+  name: Calibrate
+  description: >-
+    Finish a calibration. First press the pump's "Calibration dose" button (it
+    runs a 10 mL test), collect the output, then enter the amount measured here.
+  target:
+    entity:
+      integration: aquarium_dosing
+  fields:
+    measured_ml:
+      name: Measured output
+      description: mL actually delivered by the test dose.
+      required: true
+      selector:
+        number:
+          min: 0.1
+          max: 1000
+          step: 0.1
+          unit_of_measurement: mL
