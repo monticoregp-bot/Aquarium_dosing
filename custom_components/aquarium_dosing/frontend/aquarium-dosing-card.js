@@ -17,7 +17,7 @@
  */
 (() => {
 "use strict";
- 
+
 const DAY = 1440;
 const MODES = [
   ["interval", "Every N minutes"],
@@ -37,7 +37,7 @@ const STATE_COLOR = {
   failed: "var(--error-color, #db4437)",
   interrupted: "var(--error-color, #db4437)",
 };
- 
+
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const toMin = (hhmm) => {
@@ -54,7 +54,7 @@ const when = (iso, nowIso) => {
   const tomorrow = new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10);
   return day === tomorrow ? `tomorrow ${hhmm(iso)}` : `${day.slice(5)} ${hhmm(iso)}`;
 };
- 
+
 const CSS_COMMON = `
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
           background: var(--secondary-background-color); font-size: .85rem; white-space: nowrap; }
@@ -67,7 +67,7 @@ const CSS_COMMON = `
   .muted { color: var(--secondary-text-color); font-size: .85rem; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: var(--secondary-text-color); margin-top: 4px; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }`;
- 
+
 /* ----------------------------------------------------------------- timeline */
 /** Day strip: operating window band, one bar per dose (height = volume), "now" line. */
 function timelineSvg({ slots, cfg, nowMin, height = 110, labels = true }) {
@@ -94,17 +94,17 @@ function timelineSvg({ slots, cfg, nowMin, height = 110, labels = true }) {
   out += `<line x1="${x(nowMin)}" x2="${x(nowMin)}" y1="${T}" y2="${H - B}" stroke="var(--primary-text-color)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
   return out;
 }
- 
+
 const LEGEND = `<div class="legend">
   <span><i style="background:${STATE_COLOR.done}"></i>done</span>
   <span><i style="background:${STATE_COLOR.pending}"></i>upcoming</span>
   <span><i style="background:${STATE_COLOR.skipped}"></i>skipped</span>
   <span><i style="background:${STATE_COLOR.missed}"></i>missed / failed</span>
   <span><i style="background:var(--primary-color);opacity:.25"></i>operating window</span></div>`;
- 
+
 const statusChip = (p) =>
   `<span class="chip ${p.status === "fault" ? "fault" : BUSY.includes(p.status) ? "busy" : ["disabled", "paused"].includes(p.status) ? "muted" : ""}">${esc(STATUS_TEXT[p.status] || p.status)}</span>`;
- 
+
 /* =========================================================== editor card */
 class AquariumDosingCard extends HTMLElement {
   constructor() {
@@ -117,7 +117,7 @@ class AquariumDosingCard extends HTMLElement {
     this._preview = null;
     this._error = "";
   }
- 
+
   setConfig(config) {
     this._config = { title: "Aquarium Dosing", ...config };
   }
@@ -133,7 +133,7 @@ class AquariumDosingCard extends HTMLElement {
   disconnectedCallback() {
     clearTimeout(this._pollTimer);
   }
- 
+
   set hass(hass) {
     const first = !this._hass;
     this._hass = hass;
@@ -143,13 +143,13 @@ class AquariumDosingCard extends HTMLElement {
     }
     this._syncMaster();
   }
- 
+
   /* ------------------------------------------------------------ data */
   _ws(msg) {
     if (this._config.master_entity) msg.master_entity = this._config.master_entity;
     return this._hass.callWS(msg);
   }
- 
+
   async _load() {
     try {
       this._data = await this._ws({ type: "aquarium_dosing/get" });
@@ -173,23 +173,23 @@ class AquariumDosingCard extends HTMLElement {
     this._requestPreview();
     this._poll();
   }
- 
+
   _poll() {
     clearTimeout(this._pollTimer);
     const busy = this._data && Object.values(this._data.pumps).some((p) => BUSY.includes(p.status));
     this._pollTimer = setTimeout(() => this._load(), busy ? 2000 : 30000);
   }
- 
+
   _pump() {
     return this._data?.pumps?.[this._sel];
   }
- 
+
   _resetDraft() {
     const p = this._pump();
     this._draft = p ? JSON.parse(JSON.stringify(p.config)) : null;
     this._dirty = false;
   }
- 
+
   _payload() {
     const d = this._draft;
     const n = (v) => (v === "" || v == null ? 0 : Number(v));
@@ -201,7 +201,7 @@ class AquariumDosingCard extends HTMLElement {
       daily_cap: n(d.daily_cap), cooldown_minutes: n(d.cooldown_minutes),
     };
   }
- 
+
   _requestPreview() {
     clearTimeout(this._previewTimer);
     if (!this._draft) {
@@ -220,7 +220,7 @@ class AquariumDosingCard extends HTMLElement {
       this._drawTimeline();
     }, 150);
   }
- 
+
   /* ----------------------------------------------------------- actions */
   async _call(msg, okText) {
     try {
@@ -233,7 +233,7 @@ class AquariumDosingCard extends HTMLElement {
       return null;
     }
   }
- 
+
   async _save() {
     const snap = await this._call({ type: "aquarium_dosing/set_pump", name: this._sel, config: this._payload() }, "Saved");
     if (snap) {
@@ -242,7 +242,7 @@ class AquariumDosingCard extends HTMLElement {
       await this._load();
     }
   }
- 
+
   async _addPump() {
     const raw = prompt("Pump name (letters, numbers, underscores), e.g. alk, calcium, mg");
     if (!raw) return;
@@ -256,7 +256,7 @@ class AquariumDosingCard extends HTMLElement {
       this._renderForm();
     }
   }
- 
+
   async _deletePump() {
     if (!confirm(`Delete pump "${this._sel}", its schedule and its dose history?`)) return;
     const snap = await this._call({ type: "aquarium_dosing/delete_pump", name: this._sel }, "Deleted");
@@ -267,7 +267,7 @@ class AquariumDosingCard extends HTMLElement {
       this._renderForm();
     }
   }
- 
+
   _selectPump(name) {
     if (name === this._sel) return;
     if (this._dirty && !confirm("Discard unsaved changes?")) return;
@@ -279,7 +279,7 @@ class AquariumDosingCard extends HTMLElement {
     this._renderForm();
     this._requestPreview();
   }
- 
+
   async _doseNow() {
     const vol = this.shadowRoot.getElementById("dosevol")?.value;
     const ignore = this.shadowRoot.getElementById("ignorewin")?.checked || false;
@@ -287,12 +287,12 @@ class AquariumDosingCard extends HTMLElement {
     if (vol) msg.volume = Number(vol);
     if (await this._call(msg, "Dose started")) this._load();
   }
- 
+
   async _calDose() {
     if (!confirm("Run the 10 mL test dose now? Put the pump output into a measuring container first, not the tank.")) return;
     if (await this._call({ type: "aquarium_dosing/calibration_dose", name: this._sel }, "Test dose started")) this._load();
   }
- 
+
   async _calApply() {
     const measured = Number(this.shadowRoot.getElementById("measured")?.value);
     if (!(measured > 0)) {
@@ -311,11 +311,11 @@ class AquariumDosingCard extends HTMLElement {
       this._renderForm();
     }
   }
- 
+
   async _clearFault() {
     if (await this._call({ type: "aquarium_dosing/clear_fault", name: this._sel }, "Fault cleared")) this._load();
   }
- 
+
   async _toggleMaster(on) {
     const entity = this._masterEntity();
     try {
@@ -324,14 +324,14 @@ class AquariumDosingCard extends HTMLElement {
       this._status(`Could not toggle ${entity}: ${e.message || e}`);
     }
   }
- 
+
   _markDirty() {
     this._dirty = true;
     const s = this._root("save"), r = this._root("revert");
     if (s) s.disabled = false;
     if (r) r.disabled = false;
   }
- 
+
   /* ------------------------------------------------------------ events */
   _onInput(e) {
     const t = e.target;
@@ -352,7 +352,7 @@ class AquariumDosingCard extends HTMLElement {
     this._markDirty();
     this._requestPreview();
   }
- 
+
   _onClick(e) {
     const btn = e.target.closest("[data-act]");
     if (!btn || btn.disabled) return;
@@ -383,12 +383,12 @@ class AquariumDosingCard extends HTMLElement {
       redraw();
     }
   }
- 
+
   /* --------------------------------------------------------- rendering */
   _root(id) {
     return this.shadowRoot.getElementById(id);
   }
- 
+
   _status(msg) {
     const el = this._root("status");
     if (!el) return;
@@ -396,11 +396,11 @@ class AquariumDosingCard extends HTMLElement {
     clearTimeout(this._statusTimer);
     this._statusTimer = setTimeout(() => (el.textContent = ""), 4000);
   }
- 
+
   _masterEntity() {
     return this._config.master_entity || this._data?.master_entity || "input_boolean.aquarium_dosing";
   }
- 
+
   _shell() {
     this.shadowRoot.innerHTML = `
       <style>
@@ -455,7 +455,7 @@ class AquariumDosingCard extends HTMLElement {
     this._root("form").addEventListener("input", (e) => this._onInput(e));
     this.shadowRoot.addEventListener("click", (e) => this._onClick(e));
   }
- 
+
   _syncMaster() {
     if (!this._root("master")) return;
     const entity = this._masterEntity();
@@ -469,14 +469,14 @@ class AquariumDosingCard extends HTMLElement {
       ? "Scheduled dosing on"
       : "Scheduled dosing paused";
   }
- 
+
   _renderTabs() {
     const names = Object.keys(this._data.pumps);
     this._root("tabs").innerHTML =
       names.map((n) => `<button data-act="tab:${esc(n)}" class="${n === this._sel ? "sel" : ""}">${esc(n)}</button>`).join("") +
       `<button data-act="add">+ Add pump</button>`;
   }
- 
+
   _renderStatus() {
     const p = this._pump();
     const box = this._root("statusbox");
@@ -498,7 +498,7 @@ class AquariumDosingCard extends HTMLElement {
       .join("");
     this._root("history").innerHTML = hist ? `<div class="muted" style="margin-top:12px">Recent activity</div><table>${hist}</table>` : "";
   }
- 
+
   _renderForm() {
     const el = this._root("form");
     const d = this._draft;
@@ -569,7 +569,7 @@ class AquariumDosingCard extends HTMLElement {
         <button class="danger" data-act="delete">Delete pump</button>
       </div>`;
   }
- 
+
   _drawTimeline() {
     const svg = this._root("timeline");
     if (!svg || !this._data) return;
@@ -584,14 +584,14 @@ class AquariumDosingCard extends HTMLElement {
     svg.innerHTML = timelineSvg({ slots, cfg: this._draft, nowMin: this._data.now_minute, height: 120 });
   }
 }
- 
+
 /* ========================================================== summary card */
 class AquariumDosingSummaryCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
   }
- 
+
   setConfig(config) {
     this._config = { title: "", ...config };
   }
@@ -607,7 +607,7 @@ class AquariumDosingSummaryCard extends HTMLElement {
   disconnectedCallback() {
     clearTimeout(this._timer);
   }
- 
+
   set hass(hass) {
     const first = !this._hass;
     this._hass = hass;
@@ -616,7 +616,7 @@ class AquariumDosingSummaryCard extends HTMLElement {
       this._load();
     }
   }
- 
+
   _shell() {
     this._built = true;
     this.shadowRoot.innerHTML = `
@@ -639,7 +639,7 @@ class AquariumDosingSummaryCard extends HTMLElement {
         <div class="err" id="err"></div>
       </ha-card>`;
   }
- 
+
   async _load() {
     clearTimeout(this._timer);
     if (!this._hass || !this._built) return;
@@ -674,12 +674,12 @@ class AquariumDosingSummaryCard extends HTMLElement {
     this._timer = setTimeout(() => this._load(), busy ? 3000 : 30000);
   }
 }
- 
+
 /* ------------------------------------------------------------ registration */
 if (!customElements.get("aquarium-dosing-card")) customElements.define("aquarium-dosing-card", AquariumDosingCard);
 if (!customElements.get("aquarium-dosing-summary-card")) customElements.define("aquarium-dosing-summary-card", AquariumDosingSummaryCard);
 window.customCards = window.customCards || [];
-window.customCards.push(
+[
   {
     type: "aquarium-dosing-card",
     name: "Aquarium Dosing editor",
@@ -689,7 +689,8 @@ window.customCards.push(
     type: "aquarium-dosing-summary-card",
     name: "Aquarium Dosing summary",
     description: "Compact status, next dose, 24 h totals and dose timeline for every pump.",
-  }
-);
+  },
+].forEach((card) => {
+  if (!window.customCards.some((c) => c.type === card.type)) window.customCards.push(card);
+});
 })();
- 

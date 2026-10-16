@@ -1,0 +1,99 @@
+# Example ESPHome node for the Aquarium Dosing integration.
+#
+# The integration keeps pumps safe from Home Assistant's side (run-time cap, daily
+# cap, confirmed switch-off, fault latch). This example adds the layer that does NOT
+# depend on Home Assistant: if the switch is ever left on (HA crash, lost Wi-Fi,
+# API hiccup) the device switches the pump off by itself, and a reboot always
+# starts with every pump off.
+#
+# Set the failsafe delay a little ABOVE the "Maximum run time" you configure in
+# the integration (default 120 s) and well below anything that would harm the tank.
+
+esphome:
+  name: dosing-pumps
+  friendly_name: Dosing Pumps
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Dosing Fallback"
+    password: !secret fallback_password
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+api:
+  encryption:
+    key: !secret api_key
+  reboot_timeout: 0s   # do not reboot just because HA is down; the failsafe below covers it
+
+# One failsafe script per pump. `mode: restart` makes a new run restart the timer.
+script:
+  - id: alk_failsafe
+    mode: restart
+    then:
+      - delay: 150s
+      - logger.log: "Alk pump failsafe: switching off"
+      - switch.turn_off: alk_pump
+  - id: ca_failsafe
+    mode: restart
+    then:
+      - delay: 150s
+      - logger.log: "Calcium pump failsafe: switching off"
+      - switch.turn_off: ca_pump
+
+switch:
+  # DC peristaltic pump on a MOSFET/relay driver. Use the entity this creates
+  # (e.g. switch.alk_pump) as the "Pump switch" of a pump in the integration.
+  - platform: gpio
+    id: alk_pump
+    name: "Alk pump"
+    pin: GPIO25
+    restore_mode: ALWAYS_OFF      # never power up with a pump running
+    on_turn_on:
+      - script.execute: alk_failsafe
+    on_turn_off:
+      - script.stop: alk_failsafe
+
+  - platform: gpio
+    id: ca_pump
+    name: "Calcium pump"
+    pin: GPIO26
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - script.execute: ca_failsafe
+    on_turn_off:
+      - script.stop: ca_failsafe
+
+# Stepper (syringe) pumps, e.g. NEMA17 on a TMC2209: expose the pump as a switch that
+# runs the stepper at a constant speed while on, so "seconds per mL" calibration
+# works the same way. Keep the same failsafe pattern around it:
+#
+# stepper:
+#   - platform: a4988        # STEP/DIR style drivers (TMC2209 in standalone mode)
+#     id: alk_stepper
+#     step_pin: GPIO27
+#     dir_pin: GPIO14
+#     sleep_pin: GPIO12
+#     max_speed: 800 steps/s
+#
+# switch:
+#   - platform: template
+#     id: alk_pump
+#     name: "Alk pump"
+#     optimistic: true
+#     turn_on_action:
+#       - stepper.set_target: { id: alk_stepper, target: 100000000 }
+#       - script.execute: alk_failsafe
+#     turn_off_action:
+#       - stepper.set_target: { id: alk_stepper, target: !lambda 'return id(alk_stepper).current_position;' }
+#       - script.stop: alk_failsafe

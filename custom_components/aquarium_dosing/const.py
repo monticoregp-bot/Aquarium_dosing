@@ -1,7 +1,7 @@
 """Constants for Aquarium Dosing."""
 
 DOMAIN = "aquarium_dosing"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 CONF_MASTER_ENTITY = "master_entity"  # input_boolean: ON = scheduled dosing allowed
 CONF_ONE_AT_A_TIME = "one_at_a_time"

@@ -42,10 +42,22 @@ with category **Integration**, download **Aquarium Dosing**, restart Home Assist
 4. Turn on each pump's **Schedule enabled** and the master toggle. New pumps start with
    the schedule **off**.
 
-**If a card says "Custom element doesn't exist":** on some HA versions the automatic
-script loading does not take effect. Add it yourself: **Settings → Dashboards → ⋮ →
-Resources → Add resource**, URL `/aquarium_dosing/aquarium-dosing-card.js`, type
-**JavaScript module**, then hard-refresh.
+**The cards load automatically.** On start the integration registers its script as a
+dashboard resource (Settings → Dashboards → Resources shows
+`/aquarium_dosing/aquarium-dosing-card.js?v=...`), updates it when you upgrade, and
+removes it when you delete the integration. A resource you added by hand is updated, not
+duplicated. If your dashboards use **YAML resource mode** this cannot be done from code:
+add it to your dashboard YAML instead:
+
+```yaml
+lovelace:
+  resources:
+    - url: /aquarium_dosing/aquarium-dosing-card.js
+      type: module
+```
+
+If a card still says "Custom element doesn't exist", restart Home Assistant and
+hard-refresh the browser (Ctrl+Shift+R).
 
 ---
 
@@ -222,6 +234,7 @@ custom_components/aquarium_dosing/
   entity.py            shared base for the pump entities
   number.py time.py select.py switch.py button.py sensor.py binary_sensor.py
   api.py               websocket API for the cards
+  card_resource.py     serves the card script and registers it as a dashboard resource
   const.py, services.yaml, strings.json, translations/en.json
   frontend/aquarium-dosing-card.js   editor + summary cards
 esphome/dosing-pump.yaml             example node with a device-side failsafe

@@ -2,11 +2,8 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import voluptuous as vol
-from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -14,8 +11,8 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 
-from . import api
-from .const import DOMAIN, FRONTEND_URL, VERSION
+from . import api, card_resource
+from .const import DOMAIN
 from .coordinator import AquariumDosingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,13 +46,7 @@ async def _async_setup_global(hass: HomeAssistant) -> None:
     if hass.data.get(_GLOBAL_KEY):
         return
     api.async_register(hass)
-    card = Path(__file__).parent / "frontend" / "aquarium-dosing-card.js"
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(FRONTEND_URL, str(card), cache_headers=False)]
-    )
-    # If the cards are missing on your HA version, add FRONTEND_URL as a dashboard
-    # resource (see the README).
-    add_extra_js_url(hass, f"{FRONTEND_URL}?v={VERSION}")
+    await card_resource.async_setup(hass)
 
     async def _dose(call: ServiceCall) -> None:
         for entity_id in call.data[ATTR_ENTITY_ID]:
@@ -116,3 +107,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove the dashboard resource when the last entry is deleted."""
+    remaining = [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
+    if not remaining:
+        await card_resource.async_remove_resource(hass)
